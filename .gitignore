@@ -1,8 +1,6 @@
-# --- sekrety ---
 secrets/*
 !secrets/*.example
 
-# --- Terraform ---
 **/.terraform/
 *.tfstate
 *.tfstate.*
@@ -11,12 +9,10 @@ tfplan
 crash.log
 crash.*.log
 
-# --- Packer ---
 packer_cache/
 *.pkrvars.hcl
 !example.pkrvars.hcl
 
-# --- klucze prywatne ---
 id_rsa
 id_ed25519
 *.pem

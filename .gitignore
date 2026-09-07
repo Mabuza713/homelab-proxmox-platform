@@ -1,0 +1,8 @@
+# --- sekrety ---
+secrets/*
+!secrets/*.example
+
+.terraform/
+.terraform*
+
+terraform.tfstate*

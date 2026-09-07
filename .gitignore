@@ -2,7 +2,25 @@
 secrets/*
 !secrets/*.example
 
-.terraform/
-.terraform*
+# --- Terraform ---
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log
 
-terraform.tfstate*
+# --- Packer ---
+packer_cache/
+*.pkrvars.hcl
+!example.pkrvars.hcl
+
+# --- klucze prywatne ---
+id_rsa
+id_ed25519
+*.pem
+!**/*.pub
+
+.DS_Store
+*.swp

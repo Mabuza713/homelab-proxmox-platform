@@ -1,5 +1,5 @@
 ENV_FILE := secrets/homelab.env
-TF_DIR := terraform/environments/homelab
+TF_DIR := terraform/
 PK_DIR := packer/ubuntu-2404
 
 .PHONY: plan apply destroy image fmt init

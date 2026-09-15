@@ -1,6 +1,7 @@
 variable "proxmox_node_name" {
   type        = string
   description = "Node name"
+  default     = "mabuza-proxmox"
 }
 
 variable "ubuntu_2404_url" {

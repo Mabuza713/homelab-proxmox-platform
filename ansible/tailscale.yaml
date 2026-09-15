@@ -1,0 +1,36 @@
+- name: Tailscale init
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+      - name: Check if Tailscale is installed
+        ansible.builtin.command: which tailscale
+        register: ts_installed
+        failed_when: false
+        changed_when: false
+
+      - name: Download Tailscale
+        ansible.builtin.shell: curl -fsSL http://tailscale.com/install.sh | sh
+        when: ts_installed.rc != 0
+
+      - name: Run Tailscale
+        ansible.builtin.service:
+            name: tailscaled
+            state: started
+            enabled: true
+
+      - name: Check Tailscale status
+        ansible.builtin.command: tailscale status
+        register: ts_status
+        failed_when: false
+        changed_when: false
+
+      - name: Login to Tailscale
+        ansible.builtin.command: >
+            tailscale up
+            --authkey={{ lookup('ansible.builtin.env', 'TAILSCALE_AUTHKEY') }}
+            --accept-routes
+        when: ts_status != 0
+
+      

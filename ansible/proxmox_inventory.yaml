@@ -1,0 +1,13 @@
+plugin: community.general.proxmox
+url: "{{ lookup('ansible.builtin.env', 'PROXMOX_URL') }}"
+user: "{{ lookup('ansible.builtin.env', 'PROXMOX_USER') }}"
+token_id: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_ID') }}"
+token_secret: "{{ lookup('ansible.builtin.env', 'PROXMOX_TOKEN_SECRET') }}"
+
+validate_certs: false
+want_vms_qemu: true
+want_vms_lxc: false
+
+compose:
+  ansible_host: proxmox_agent_interfaces[1].ip_addresses[0]
+  ansible_user: lookup('ansible.builtin.env', 'ANSIBLE_USER')

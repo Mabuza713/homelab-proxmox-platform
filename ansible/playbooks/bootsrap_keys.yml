@@ -1,7 +1,23 @@
-- hosts: all
+- name: Deploy the ansible SSH key
+  hosts: all
   gather_facts: false
   tasks:
+      - name: Make sure the ansible SSH key exists on this machine
+        delegate_to: localhost
+        run_once: true
+        become: false
+        block:
+            - name: Make sure ~/.ssh exists
+              ansible.builtin.file:
+                  path: ~/.ssh
+                  state: directory
+                  mode: "0700"
+
+            - name: Generate the key if it is missing
+              ansible.builtin.command: ssh-keygen -t ed25519 -N '' -f ~/.ssh/id_ed25519_ansible
+              args:
+                  creates: ~/.ssh/id_ed25519_ansible
       - name: Insert ansible key
         ansible.posix.authorized_key:
             user: "{{ ansible_user | default('admin') }}"
-            key: "{{ lookup('file', '/root/.ssh/id_ed25519_ansible.pub') }}"
+            key: "{{ lookup('file', '~/.ssh/id_ed25519_ansible.pub') }}"

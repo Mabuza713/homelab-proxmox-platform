@@ -1,0 +1,40 @@
+---
+- name: Remove hosts from the tailnet
+  hosts: all
+  become: true
+  tasks:
+      - name: Get API token
+        ansible.builtin.uri:
+            url: https://api.tailscale.com/api/v2/oauth/token
+            method: POST
+            body_format: form-urlencoded
+            body:
+                client_id: "{{ tailscale_oauth_client_id }}"
+                client_secret: "{{ tailscale_oauth_client_secret }}"
+        register: ts_oauth
+        delegate_to: localhost
+        become: false
+        run_once: true
+        no_log: true
+
+      - name: Read Tailscale status
+        ansible.builtin.command: tailscale status --json
+        register: ts_status
+        changed_when: false
+
+      - name: Remove host
+        when: (ts_status.stdout | from_json).BackendState == 'Running'
+        block:
+            - name: Log out
+              ansible.builtin.command: tailscale logout
+              changed_when: true
+
+            - name: Delete the device from the tailnet
+              ansible.builtin.uri:
+                  url: "https://api.tailscale.com/api/v2/device/{{ (ts_status.stdout | from_json).Self.ID }}"
+                  method: DELETE
+                  headers:
+                      Authorization: "Bearer {{ ts_oauth.json.access_token }}"
+              delegate_to: localhost
+              become: false
+              changed_when: true

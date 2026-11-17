@@ -1,0 +1,3 @@
+vault_tailscale_token: ""
+vault_tailscale_oauth_client_id: ""
+vault_tailscale_oauth_client_secret: ""

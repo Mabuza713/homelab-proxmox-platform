@@ -1,0 +1,20 @@
+---
+- name: Install Tailscale and join the tailnet
+  hosts: all
+  become: true
+  tasks:
+      - name: Install Tailscale (official script, detects the distro itself)
+        ansible.builtin.shell: curl -fsSL https://tailscale.com/install.sh | sh
+        args:
+            creates: /usr/bin/tailscale
+
+      - name: Check if already in the tailnet
+        ansible.builtin.command: tailscale status
+        register: ts_status
+        changed_when: false
+        failed_when: false
+
+      - name: Join the tailnet
+        ansible.builtin.command: "tailscale up --authkey={{ tailscale_token }} --timeout=60s"
+        when: ts_status.rc != 0
+        no_log: true

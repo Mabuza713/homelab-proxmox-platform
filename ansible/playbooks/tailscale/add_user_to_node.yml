@@ -1,0 +1,47 @@
+---
+#adding user cannot be done with oauth authentication
+- name: Share node with user
+  hosts: "{{ target }}"
+  become: true
+  vars:
+      isolate_tag: "tag:isolated"
+  tasks:
+      - name: Check if emial is given
+        ansible.builtin.assert:
+            that: share_email is defined
+            fail_msg: "Email is not given, pass it with -e share_email=foo@example.com"
+        run_once: True
+        delegate_to: localhost
+
+      - name: Read Tailscale status
+        ansible.builtin.command: tailscale status --json
+        register: ts_status
+        changed_when: false
+
+      - name: Tag the node as isolated
+        ansible.builtin.uri:
+            url: "https://api.tailscale.com/api/v2/device/{{ (ts_status.stdout | from_json).Self.ID }}/tags"
+            method: POST
+            headers:
+                Authorization: "Bearer {{ tailscale_api_key }}"
+            body_format: json
+            body:
+                tags: "{{ ((ts_status.stdout | from_json).Self.Tags | default([], true) + [isolate_tag]) | unique }}"
+        delegate_to: localhost
+        become: false
+
+      - name: Invite user to this node
+        ansible.builtin.uri:
+            url: "https://api.tailscale.com/api/v2/device/{{ (ts_status.stdout | from_json).Self.ID }}/device-invites"
+            method: POST
+            headers:
+                Authorization: "Bearer {{ tailscale_api_key }}"
+            body_format: json
+            body:
+                - email: "{{ share_email}}"
+                  multiUse: false
+                  allowExitNode: false
+
+        delegate_to: localhost
+        become: false
+        changed_when: true

@@ -1,0 +1,53 @@
+---
+- name: Clean up orphaned isolated tags
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+      isolate_tag: "tag:isolated"
+      ts_api: https://api.tailscale.com/api/v2
+  tasks:
+      - name: List devices
+        ansible.builtin.uri:
+            url: "{{ ts_api }}/tailnet/-/devices"
+            headers:
+                Authorization: "Bearer {{ tailscale_api_key }}"
+        register: ts_devices
+        check_mode: false
+
+      - name: List invites of devices with the isolated tag
+        ansible.builtin.uri:
+            url: "{{ ts_api }}/device/{{ item.nodeId }}/device-invites"
+            headers:
+                Authorization: "Bearer {{ tailscale_api_key }}"
+        register: ts_invites
+        loop: "{{ ts_devices.json.devices | selectattr('tags', 'defined') | selectattr('tags', 'contains', isolate_tag) | list }}"
+        loop_control:
+            label: "{{ item.hostname }}"
+        check_mode: false
+
+      - name: Revoke invites that nobody accepted
+        ansible.builtin.uri:
+            url: "{{ ts_api }}/device-invites/{{ item.id }}"
+            method: DELETE
+            headers:
+                Authorization: "Bearer {{ tailscale_api_key }}"
+            status_code: [200, 204]
+        loop: "{{ ts_invites.results | map(attribute='json') | map('default', [], true) | flatten | rejectattr('accepted') | list }}"
+        loop_control:
+            label: "{{ item.email }}"
+        changed_when: true
+
+      - name: Remove the tag from devices without accepted users
+        ansible.builtin.uri:
+            url: "{{ ts_api }}/device/{{ item.item.nodeId }}/tags"
+            method: POST
+            headers:
+                Authorization: "Bearer {{ tailscale_api_key }}"
+            body_format: json
+            body:
+                tags: "{{ item.item.tags | difference([isolate_tag]) }}"
+        loop: "{{ ts_invites.results }}"
+        loop_control:
+            label: "{{ item.item.hostname }}"
+        when: item.json | default([], true) | selectattr('accepted') | list | length == 0

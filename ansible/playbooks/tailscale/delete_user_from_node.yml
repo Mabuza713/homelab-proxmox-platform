@@ -1,0 +1,51 @@
+---
+- name: Revoke node invites for a user
+  hosts: "{{ target }}"
+  become: true
+  vars:
+      isolate_tag: "tag:isolated"
+  tasks:
+      - name: Make sure the email is given
+        ansible.builtin.assert:
+            that: share_email is defined
+            fail_msg: "Podaj -e share_email=ktos@example.com"
+        run_once: true
+
+      - name: Read Tailscale status
+        ansible.builtin.command: tailscale status --json
+        register: ts_status
+        changed_when: false
+
+      - name: List invites for this node
+        ansible.builtin.uri:
+            url: "https://api.tailscale.com/api/v2/device/{{ (ts_status.stdout | from_json).Self.ID }}/device-invites"
+            headers:
+                Authorization: "Bearer {{ tailscale_api_key }}"
+        register: ts_invites
+        delegate_to: localhost
+        become: false
+
+      - name: Delete invites for this email
+        ansible.builtin.uri:
+            url: "https://api.tailscale.com/api/v2/device-invites/{{item.id}}"
+            method: DELETE
+            headers:
+                Authorization: "Bearer {{ tailscale_api_key }}"
+            status_code: [200, 204]
+        loop: "{{ ts_invites.json | default([], true) | selectattr('email', 'equalto', share_email) | list }}"
+        delegate_to: localhost
+        become: false
+        changed_when: true
+
+      - name: Remove the isolated tag when no other users are left
+        ansible.builtin.uri:
+            url: "https://api.tailscale.com/api/v2/device/{{ (ts_status.stdout | from_json).Self.ID }}/tags"
+            method: POST
+            headers:
+                Authorization: "Bearer {{ tailscale_api_key }}"
+            body_format: json
+            body:
+                tags: "{{ (ts_status.stdout | from_json).Self.Tags | default([], true) | difference([isolate_tag]) }}"
+        when: ts_invites.json | default([], true) | rejectattr('email', 'equalto', share_email) | list | length == 0
+        delegate_to: localhost
+        become: false

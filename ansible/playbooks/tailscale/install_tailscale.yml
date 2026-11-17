@@ -4,8 +4,9 @@
   become: true
   tasks:
       - name: Install Tailscale (official script, detects the distro itself)
-        ansible.builtin.shell: curl -fsSL https://tailscale.com/install.sh | sh
+        ansible.builtin.shell: set -o pipefail; curl -fsSL https://tailscale.com/install.sh | sh
         args:
+            executable: /bin/bash
             creates: /usr/bin/tailscale
 
       - name: Check if already in the tailnet

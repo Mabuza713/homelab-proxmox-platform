@@ -1,0 +1,26 @@
+#cloud-config
+hostname: ${hostname}
+manage_etc_hosts: true
+
+users:
+  - name: ${admin_user}
+    primary_group: ${admin_user}
+    groups: [sudo]
+    shell: /bin/bash
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    ssh_authorized_keys:
+      - ${ssh_authorized_key}
+
+ssh_pwauth: false
+disable_root: true
+
+apt:
+  primary:
+    - arches: [default]
+      uri: ${apt_mirror}
+
+package_update: true
+packages: ${packages}
+
+runcmd:
+  - systemctl enable --now qemu-guest-agent

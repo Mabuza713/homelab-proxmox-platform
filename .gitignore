@@ -1,3 +1,29 @@
 inventory.ini
 .vault_pass
 vault.yml
+
+# Secrets: keep only the .example templates
+secrets/*
+!secrets/*.example
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+*.auto.tfvars
+# tfvars hold no secrets here (token lives in secrets/), so they are tracked
+
+# Keys
+id_rsa
+id_ed25519
+*.pem
+!**/*.pub
+
+.DS_Store
+*.swp
+/skills
+.claude/
